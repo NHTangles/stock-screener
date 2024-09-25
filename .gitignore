@@ -129,6 +129,7 @@ dmypy.json
 
 # Custom
 data/
+data_persist/
 .vscode/
 output/
 tmp/
