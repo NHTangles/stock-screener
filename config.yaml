@@ -1,15 +1,12 @@
 # Data Retrieval
-# Available Sources: YAHOO, TD_AMERITRADE
 DATA_SOURCE: YAHOO
 
-# Not needed if you use YAHOO
-API_KEY: Your_API_Key
 
 # Which Ticker should be the reference for performance?
 REFERENCE_TICKER: SPY
 
 # What is the lowest Percentile you want to see?
-MIN_PERCENTILE: 70
+MIN_PERCENTILE: 75
 
 # Do you want all listed stocks?
 USE_ALL_LISTED_STOCKS: true

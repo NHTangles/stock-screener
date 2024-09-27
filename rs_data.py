@@ -5,9 +5,7 @@ import time
 import bs4 as bs
 import datetime as dt
 import os
-import pandas_datareader.data as web
 import pickle
-import requests
 import yaml
 import yfinance as yf
 import pandas as pd
@@ -16,7 +14,6 @@ import numpy as np
 import re
 from ftplib import FTP
 from io import StringIO
-from time import sleep
 
 from datetime import date
 from datetime import datetime
@@ -57,11 +54,8 @@ def read_json(json_file):
     with open(json_file, "r", encoding="utf-8") as fp:
         return json.load(fp)
 
-API_KEY = cfg("API_KEY")
-TD_API = "https://api.tdameritrade.com/v1/marketdata/%s/pricehistory"
 PRICE_DATA_FILE = os.path.join(DIR, "data", "price_history.json")
 REFERENCE_TICKER = cfg("REFERENCE_TICKER")
-DATA_SOURCE = cfg("DATA_SOURCE")
 ALL_STOCKS = cfg("USE_ALL_LISTED_STOCKS")
 TICKER_INFO_FILE = os.path.join(DIR, "data_persist", "ticker_info.json")
 TICKER_INFO_DICT = read_json(TICKER_INFO_FILE)
@@ -160,19 +154,10 @@ def write_ticker_info_file(info_dict):
     write_to_file(info_dict, TICKER_INFO_FILE)
 
 def enrich_ticker_data(ticker_response, security):
-    ticker_response["sector"] = security["sector"]
-    ticker_response["industry"] = security["industry"]
+    #ticker_response["sector"] = security["sector"]
+    #ticker_response["industry"] = security["industry"]
     ticker_response["universe"] = security["universe"]
 
-def tda_params(apikey, period_type="year", period=2, frequency_type="daily", frequency=1):
-    """Returns tuple of api get params. Uses clenow default values."""
-    return (
-           ("apikey", apikey),
-           ("periodType", period_type),
-           ("period", period),
-           ("frequencyType", frequency_type),
-           ("frequency", frequency)
-    )
 
 def print_data_progress(ticker, universe, idx, securities, error_text, elapsed_s, remaining_s):
     dt_ref = datetime.fromtimestamp(0)
@@ -211,47 +196,8 @@ def load_ticker_info(ticker, info_dict):
     }
     info_dict[ticker] = ticker_info
 
-def load_prices_from_tda(securities, api_key, info = {}):
-    print("*** Loading Stocks from TD Ameritrade ***")
-    headers = {"Cache-Control" : "no-cache"}
-    params = tda_params(api_key)
-    tickers_dict = {}
-    start = time.time()
-    load_times = []
-    new_entries = 0
-
-    for idx, sec in enumerate(securities):
-        ticker = sec["ticker"]
-        r_start = time.time()
-        response = requests.get(
-                TD_API % ticker,
-                params=params,
-                headers=headers
-        )
-        ticker_data = response.json()
-        if not ticker in TICKER_INFO_DICT:
-            new_entries = new_entries + 1
-            load_ticker_info(ticker, TICKER_INFO_DICT)
-            if new_entries % 25 == 0:
-                write_ticker_info_file(TICKER_INFO_DICT)
-        ticker_data["industry"] = TICKER_INFO_DICT[ticker]["info"]["industry"]
-        now = time.time()
-        current_load_time = now - r_start
-        load_times.append(current_load_time)
-        remaining_seconds = get_remaining_seconds(load_times, idx, len(securities))
-        enrich_ticker_data(ticker_data, sec)
-        tickers_dict[sec["ticker"]] = ticker_data
-        error_text = f' Error with code {response.status_code}' if response.status_code != 200 else ''
-        print_data_progress(sec["ticker"], sec["universe"], idx, securities, error_text, now - start, remaining_seconds)
-
-        # throttle if triggered from github
-        if info["forceTDA"]:
-            sleep(0.4)
-
-    write_price_history_file(tickers_dict)
-
-
 def get_yf_data(security, start_date, end_date):
+        new_entries = 0
         ticker_data = {}
         ticker = security["ticker"]
         escaped_ticker = escape_ticker(ticker)
@@ -277,10 +223,18 @@ def get_yf_data(security, start_date, end_date):
             candles.append(candle)
 
         ticker_data["candles"] = candles
+        if not ticker in TICKER_INFO_DICT:
+            new_entries = new_entries + 1
+            load_ticker_info(ticker, TICKER_INFO_DICT)
+            if new_entries % 25 == 0:
+                write_ticker_info_file(TICKER_INFO_DICT)
+        ticker_data["industry"] = TICKER_INFO_DICT[ticker]["info"]["industry"]
+        ticker_data["sector"] = TICKER_INFO_DICT[ticker]["info"]["sector"]
+
         enrich_ticker_data(ticker_data, security)
         return ticker_data
 
-def load_prices_from_yahoo(securities, info = {}):
+def load_prices_from_yahoo(securities):
     print("*** Loading Stocks from Yahoo Finance ***")
     today = date.today()
     start = time.time()
@@ -291,9 +245,6 @@ def load_prices_from_yahoo(securities, info = {}):
         ticker = security["ticker"]
         r_start = time.time()
         ticker_data = get_yf_data(security, start_date, today)
-        # if not ticker in TICKER_INFO_DICT:
-        #     load_ticker_info(ticker, TICKER_INFO_DICT)
-        # ticker_data["industry"] = TICKER_INFO_DICT[ticker]["info"]["industry"]
         now = time.time()
         current_load_time = now - r_start
         load_times.append(current_load_time)
@@ -302,16 +253,12 @@ def load_prices_from_yahoo(securities, info = {}):
         tickers_dict[ticker] = ticker_data
     write_price_history_file(tickers_dict)
 
-def save_data(source, securities, api_key, info = {}):
-    if source == "YAHOO":
-        load_prices_from_yahoo(securities, info)
-    elif source == "TD_AMERITRADE":
-        load_prices_from_tda(securities, api_key, info)
+def save_data(securities):
+    load_prices_from_yahoo(securities)
 
 
-def main(forceTDA = False, api_key = API_KEY):
-    dataSource = DATA_SOURCE if not forceTDA else "TD_AMERITRADE"
-    save_data(dataSource, SECURITIES, api_key, {"forceTDA": forceTDA})
+def main():
+    save_data(SECURITIES)
     write_ticker_info_file(TICKER_INFO_DICT)
 
 if __name__ == "__main__":

@@ -1,46 +1,38 @@
-# NOTE: This is no longer maintained. If you need it, fork it or something.
----
+# Basic stock screener for covered calls/wheel strategy
 
-# relative-strength
-IBD Style Relative Strength Percentile Ranking of Stocks (i.e. 0-100 Score).  
-I also made a TradingView indicator, but it cannot give you the percentile ranking, it just shows you the Relative Strength: https://www.tradingview.com/script/SHE1xOMC-Relative-Strength-IBD-Style/
-
-## Daily Generated Outputs
-Stocks: https://github.com/skyte/rs-log/blob/main/output/rs_stocks.csv  
-Industries: https://github.com/skyte/rs-log/blob/main/output/rs_industries.csv  
-  
-
-## Known Issues
-Unfortunately the close prices loaded from the price history API are not always split adjusted. So if a stock had a split recently there is a chance the relative strength value will be wrong...
-## Calculation
-Yearly performance of stock (most recent quarter is weighted double) divided by yearly performance of reference index (`SPY` by default).
-  
+This is forked from github.com/skyte/relative_strength, and the first step of screening is to calculate the relative strengths of all considered stocks.  It then takes the top 25% (75th percentile) of these stocks, and further screens them as follows:
+- Remove stocks that don't have an option chain
+- Remove biotech and pharmaceutical companies (these can sometimes be subject to sudden and unpredictable moves depending on FDA approval)
+- Remove any stocks with analyst recommendations of "Sell" or "StrongSell"
+- Remove any stocks with minimum analyst price target below the current price
+- Remove any stocks with the median analyst price target less than 20% above the current price.
+- Remove any stocks where the current price, or the 50 day moving average, is below the 200-day moving average.
+**The above screening rules were made up by me, based on nothing in particular, and I make no claims whatsoever as to their usefulness.  I further do not guarantee these scripts work as described, and state that the output they produce is for informational purposes only, and am not responsible for any loss (financial or otherwise) resulting from the use of these scripts for any purpose.**
+For clarity: **This does not constitute financial advice**
+## relative-strength
+This part is largely unchanged from the original aside from some tidying up and removing TD-Ameritrade as a datasource. Everything comes from Yahoo Finance now
+From the original author: 
+>IBD Style Relative Strength Percentile Ranking of Stocks (i.e. 0-100 Score).  
+>I also made a TradingView indicator, but it cannot give you the percentile ranking, it just shows you the Relative Strength: https://www.tradingview.com/script/SHE1xOMC-Relative-Strength-IBD-Style/
 
 ## Considered Stocks
 Tickers from ftp://ftp.nasdaqtrader.com/symboldirectory/nasdaqtraded.txt disregarding ETFs and all stocks where the industry and sector information couldn't be retrieved from yahoo finance.
 ## How To Run
 
-### Run EXE
+Just run the main script.
 
-1. Open the latest successful run here: https://github.com/skyte/relative-strength/actions/workflows/exe.yml
-2. Download `exe-package` at the bottom (need to be logged in into github)
-3. Exctract the `relative-strength` folder and enter it
-   - If needed open `config.yaml` and put in your preferences 
-4. Run `relative-strength.exe`
+python3 screener.py
 
-### Run Python Script
-
-1. Open `config.yaml` and put in your preferences 
-2. Install requirements: `python -m pip install -r requirements.txt`
-3. Run `relative-strength.py`
+It'll take a while to chunk through everything, but less time than it'd take you to screen by hand.
 
 #### Separate Steps
 
-Instead of running `relative-strength.py` you can also:
+Instead of running `screener.py` you can also:
 
 1. Run `rs_data.py` to aggregate the price data
 2. Run `rs_ranking.py` to calculate the relative strength rankings
-
+3. Run `get_screen_data.py` to collect analyst recommendations, target prices, moving averages, etc.
+4. Run `apply_screen_rules.py` to screen out the stocks.
 
 
 ### \*\*\* Output \*\*\*
@@ -48,27 +40,15 @@ Instead of running `relative-strength.py` you can also:
 - in the `output` folder you will find:
   - the list of ranked stocks: `rs_stocks.csv`
   - the list of ranked industries: `rs_industries.csv`
+  - the list of stocks that passed the screen: `screened_stocks.csv`
 
 
 ## Config
+
+The relative_strength component of this still has some configurable options.
+The screening rules may become configurable at some point in the future.
 
 #### Private File
 
 You can create a `config_private.yaml` next to `config.yaml` and overwrite some parameters like `API_KEY`. That way you don't get conflicts when pulling a new version.
 
-#### Data Sources
-
-Can be switched with the field `DATA_SOURCE`
-
-##### Yahoo Finance
-
-(Benchmark: Loads 1500 Stocks in 20m)
-
-- Is default, no config necessary.
-
-##### TD Ameritrade
-
-(Benchmark: Loads 1500 Stocks in 18m)
-
-1. Create TDAmeritrade Developer Account and App
-2. Put in your `API_KEY` in `config.yaml` and change `DATA_SOURCE`.
