@@ -7,16 +7,23 @@ This is forked from github.com/skyte/relative_strength, and the first step of sc
 - Remove any stocks with minimum analyst price target below the current price
 - Remove any stocks with the median analyst price target less than 20% above the current price.
 - Remove any stocks where the current price, or the 50 day moving average, is below the 200-day moving average.
+
 **The above screening rules were made up by me, based on nothing in particular, and I make no claims whatsoever as to their usefulness.  I further do not guarantee these scripts work as described, and state that the output they produce is for informational purposes only, and am not responsible for any loss (financial or otherwise) resulting from the use of these scripts for any purpose.**
+
 For clarity: **This does not constitute financial advice**
+
 ## relative-strength
+
 This part is largely unchanged from the original aside from some tidying up and removing TD-Ameritrade as a datasource. Everything comes from Yahoo Finance now
+
 From the original author: 
 >IBD Style Relative Strength Percentile Ranking of Stocks (i.e. 0-100 Score).  
 >I also made a TradingView indicator, but it cannot give you the percentile ranking, it just shows you the Relative Strength: https://www.tradingview.com/script/SHE1xOMC-Relative-Strength-IBD-Style/
 
 ## Considered Stocks
+
 Tickers from ftp://ftp.nasdaqtrader.com/symboldirectory/nasdaqtraded.txt disregarding ETFs and all stocks where the industry and sector information couldn't be retrieved from yahoo finance.
+
 ## How To Run
 
 Just run the main script.
