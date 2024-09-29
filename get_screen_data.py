@@ -3,6 +3,7 @@ import json
 import os
 import yfinance as yf
 import pandas as pd
+import datetime
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -31,6 +32,18 @@ def load_ticker_info(ticker, info_dict):
     yft = yf.Ticker(escaped_ticker)
     if not yft.options: return # no point including it if there's no option chain
     ticker_info = {}
+    ticker_info['Period'] = 'Single' # only one option chain
+    if len(yft.options) > 1:
+        d0 = datetime.datetime.strptime(yft.options[0],"%Y-%m-%d").date()
+        d1 = datetime.datetime.strptime(yft.options[1],"%Y-%m-%d").date()
+        p = (d1 - d0).days
+        if p < 10: # should always be 7 for weeklies but this seems safer
+           ticker_info['Period'] = 'Week'
+        elif p > 40: # 21, 28, or 35 for monthlies
+           ticker_info['Period'] = 'Quarter'
+        else:
+           ticker_info['Period'] = 'Month'
+
     yft_info = yft.get_fast_info()
     ticker_info['MA50'] = yft_info['fiftyDayAverage']
     ticker_info['MA200'] = yft_info['twoHundredDayAverage']

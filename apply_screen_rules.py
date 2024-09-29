@@ -22,6 +22,8 @@ TITLE_BEST_REC = "Best Recommendation"
 TITLE_WORST_REC = "Worst Recommendation"
 TITLE_LOW_TARGET = "Lowest target growth"
 TITLE_MED_TARGET = "Median target growth"
+TITLE_OPT_PERIOD = "Option Period"
+TITLE_LAST_SALE = "Last Sale price"
 
 GOODSTOCKS = []
 
@@ -82,13 +84,14 @@ def apply_screen(ticker):
                        "-" if latest_rec == -1 else sd['recs']['period'][latest_rec],
                        "-" if latest_rec == -1 else f"{best_rec}({sd['recs'][best_rec][latest_rec]})",
                        "-" if latest_rec == -1 else f"{worst_rec}({sd['recs'][worst_rec][latest_rec]})",
-                       low_target_growth, med_target_growth))
+                       low_target_growth, med_target_growth, sd['Period'], sd['Price']))
     
 
 def main(skipEnter = False):
     for ticker in SCREEN_DATA_DICT.keys():
         apply_screen(ticker)
-    df = pd.DataFrame(GOODSTOCKS, columns=[TITLE_TICKER, TITLE_OVERMA50, TITLE_LATEST_REC, TITLE_BEST_REC, TITLE_WORST_REC, TITLE_LOW_TARGET, TITLE_MED_TARGET])
+    df = pd.DataFrame(GOODSTOCKS, columns=[TITLE_TICKER, TITLE_OVERMA50, TITLE_LATEST_REC, TITLE_BEST_REC, TITLE_WORST_REC,
+                                           TITLE_LOW_TARGET, TITLE_MED_TARGET, TITLE_OPT_PERIOD, TITLE_LAST_SALE])
     df.to_csv(os.path.join(DIR, "output", f'screened_stocks.csv'), index = False)
     print("***\nYour 'screened_stocks.csv' is in the output folder.\n***")
 
